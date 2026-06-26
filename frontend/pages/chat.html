@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TravelAI — Chat Assistant</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .app-body { flex: 1; display: flex; overflow: hidden; }
+    .chat-sidebar {
+      width: 260px;
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem;
+      gap: .75rem;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .chat-sidebar h4 { color: rgba(255,255,255,.6); font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; font-family: var(--font-body); }
+    .session-item {
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: var(--radius-sm);
+      padding: .65rem .85rem;
+      cursor: pointer;
+      transition: all .2s;
+      color: rgba(255,255,255,.8);
+      font-size: .83rem;
+    }
+    .session-item:hover, .session-item.active { background: rgba(255,255,255,.14); color: var(--white); }
+    .session-item small { display: block; color: rgba(255,255,255,.4); font-size: .72rem; margin-top: .15rem; }
+    .chat-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .chat-header {
+      padding: 1rem 1.5rem;
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chat-header h3 { font-family: var(--font-display); color: var(--navy); font-size: 1.2rem; }
+    .quick-questions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      padding: 1rem 1.5rem;
+      background: var(--smoke);
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .quick-q {
+      background: var(--white);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 20px;
+      padding: .35rem .85rem;
+      font-size: .8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      color: var(--gray-600);
+    }
+    .quick-q:hover { border-color: var(--teal); color: var(--teal); }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; background: var(--smoke); }
+    .chat-welcome {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--gray-400);
+    }
+    .chat-welcome .emoji { font-size: 3rem; margin-bottom: 1rem; }
+    .chat-bubble .meta { font-size: .72rem; color: var(--gray-400); margin-top: .3rem; }
+    .chat-bubble.assistant .meta { text-align: left; }
+    .chat-bubble.user .meta { text-align: right; }
+    /* Markdown-style formatting */
+    .chat-bubble p { margin-bottom: .5rem; }
+    .chat-bubble p:last-child { margin-bottom: 0; }
+    .chat-bubble ul { margin: .4rem 0 .4rem 1.1rem; }
+    .chat-bubble li { margin-bottom: .2rem; }
+    .chat-bubble strong { font-weight: 700; }
+    .chat-input-area {
+      padding: 1rem 1.5rem;
+      background: var(--white);
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      gap: .75rem;
+      align-items: flex-end;
+    }
+    .limit-bar { padding: .5rem 1.5rem; background: var(--gold-pale); font-size: .8rem; text-align: center; color: #92600a; }
+    @media (max-width: 768px) { .chat-sidebar { display: none; } }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand"><div class="logo-icon">✈️</div>Travel<span class="accent">AI</span></a>
+    <ul class="navbar-nav">
+      <li><a href="chat.html" class="active">Chat</a></li>
+      <li><a href="planner.html">Planner</a></li>
+      <li><a href="discover.html">Discover</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="nav-user" class="nav-user-info" style="display:none">
+        <span id="nav-username"></span>
+        <span id="nav-pro-badge" class="pro-badge" style="display:none">PRO</span>
+        <button id="nav-logout" class="btn btn-sm btn-outline-white">Logout</button>
+      </div>
+      <div id="nav-login">
+        <a href="login.html" class="btn btn-sm btn-gold">Sign In</a>
+      </div>
+    </div>
+  </nav>
+
+  <div id="limit-bar" class="limit-bar" style="display:none">
+    ⚠️ You've used <span id="chat-used">0</span>/10 free messages today. <a href="subscription.html" style="font-weight:700;color:var(--teal-dark)">Upgrade to Pro</a> for unlimited access.
+  </div>
+
+  <div class="app-body">
+    <!-- Sidebar -->
+    <div class="chat-sidebar">
+      <button class="btn btn-gold btn-block" id="new-chat-btn">+ New Chat</button>
+      <h4 class="mt-2">Recent Sessions</h4>
+      <div id="sessions-list"></div>
+    </div>
+
+    <!-- Main chat area -->
+    <div class="chat-main">
+      <div class="chat-header">
+        <div>
+          <h3>💬 Travel Assistant</h3>
+          <p style="font-size:.8rem;color:var(--gray-400)">Powered by Groq AI · Ask me anything about travel</p>
+        </div>
+        <div class="flex gap-1">
+          <button id="clear-btn" class="btn btn-sm btn-outline">🗑 Clear</button>
+        </div>
+      </div>
+
+      <div class="quick-questions">
+        <button class="quick-q" data-q="What are the best countries to visit in Europe?">🌍 Best of Europe</button>
+        <button class="quick-q" data-q="Give me budget travel tips for Southeast Asia">💰 Budget SEA tips</button>
+        <button class="quick-q" data-q="What documents do I need to travel to Japan?">📄 Japan visa</button>
+        <button class="quick-q" data-q="Best time of year to visit the Maldives?">🏝️ Maldives timing</button>
+        <button class="quick-q" data-q="What should I pack for a 2-week trip to Morocco?">🎒 Morocco packing</button>
+      </div>
+
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-welcome" id="welcome-msg">
+          <div class="emoji">🌍</div>
+          <h3>Hello, traveler!</h3>
+          <p>I'm your AI travel assistant. Ask me about destinations, itineraries, visa requirements, packing tips, or anything travel-related.</p>
+          <p class="mt-2" style="font-size:.88rem">Try one of the quick questions above, or type your own.</p>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <textarea
+          id="chat-input"
+          class="chat-input"
+          placeholder="Ask anything about travel… (Enter to send, Shift+Enter for new line)"
+          rows="1"
+        ></textarea>
+        <button id="send-btn" class="btn btn-primary" style="height:48px;padding:.65rem 1.25rem">Send ➤</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    let currentSession = null;
+    let isTyping = false;
+
+    // Initialize
+    async function init() {
+      initNav();
+      if (!Auth.isLoggedIn()) {
+        document.getElementById("nav-login").style.display = "flex";
+      }
+      await loadSessions();
+      updateLimitBar();
+    }
+
+    function updateLimitBar() {
+      const user = Auth.getUser();
+      if (!user || user.is_pro) return;
+      const used = user.usage?.chat_count || 0;
+      if (used >= 7) {
+        document.getElementById("limit-bar").style.display = "block";
+        document.getElementById("chat-used").textContent = used;
+      }
+    }
+
+    async function loadSessions() {
+      if (!Auth.isLoggedIn()) return;
+      try {
+        const sessions = await ChatAPI.sessions();
+        const list = document.getElementById("sessions-list");
+        list.innerHTML = sessions.map(s => `
+          <div class="session-item ${s.session_id === currentSession ? 'active' : ''}" 
+               onclick="loadSession('${s.session_id}')">
+            Chat Session
+            <small>${s.message_count} messages · ${formatDate(s.last_at)}</small>
+          </div>`).join("") || `<p style="color:rgba(255,255,255,.4);font-size:.82rem">No sessions yet</p>`;
+      } catch (e) { /* ignore if not logged in */ }
+    }
+
+    async function loadSession(sessionId) {
+      currentSession = sessionId;
+      document.getElementById("welcome-msg")?.remove();
+      const msgs = document.getElementById("chat-messages");
+      msgs.innerHTML = "";
+      try {
+        const history = await ChatAPI.history(sessionId);
+        history.forEach(m => appendBubble(m.role, m.content, false));
+        scrollBottom();
+        loadSessions();
+      } catch (e) { showToast("Could not load session", "error"); }
+    }
+
+    // Render markdown-like formatting
+    function renderMarkdown(text) {
+      return text
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.*?)\*/g, "<em>$1</em>")
+        .replace(/^- (.+)$/gm, "<li>$1</li>")
+        .replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>")
+        .replace(/\n\n/g, "</p><p>")
+        .replace(/\n/g, "<br>")
+        .replace(/^/, "<p>")
+        .replace(/$/, "</p>")
+        .replace(/<p><ul>/g, "<ul>")
+        .replace(/<\/ul><\/p>/g, "</ul>");
+    }
+
+    function appendBubble(role, content, animate = true) {
+      const welcome = document.getElementById("welcome-msg");
+      if (welcome) welcome.remove();
+
+      const msgs = document.getElementById("chat-messages");
+      const div  = document.createElement("div");
+      div.className = `chat-bubble ${role}${animate ? " fade-in" : ""}`;
+
+      const time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+      div.innerHTML = `<div>${renderMarkdown(content)}</div><div class="meta">${role === "assistant" ? "TravelAI · " : "You · "}${time}</div>`;
+      msgs.appendChild(div);
+      scrollBottom();
+      return div;
+    }
+
+    function scrollBottom() {
+      const msgs = document.getElementById("chat-messages");
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function showTyping() {
+      const msgs = document.getElementById("chat-messages");
+      const div  = document.createElement("div");
+      div.className = "typing-indicator fade-in";
+      div.id = "typing-ind";
+      div.innerHTML = `<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>`;
+      msgs.appendChild(div);
+      scrollBottom();
+    }
+
+    function removeTyping() {
+      document.getElementById("typing-ind")?.remove();
+    }
+
+    async function sendMessage() {
+      if (isTyping) return;
+      const input   = document.getElementById("chat-input");
+      const message = input.value.trim();
+      if (!message) return;
+
+      if (!Auth.isLoggedIn()) {
+        showToast("Please sign in to use the chat.", "warning");
+        setTimeout(() => window.location.href = "login.html", 1500);
+        return;
+      }
+
+      input.value = "";
+      input.style.height = "auto";
+      appendBubble("user", message);
+      isTyping = true;
+      showTyping();
+
+      const btn = document.getElementById("send-btn");
+      btn.disabled = true;
+
+      try {
+        const resp = await ChatAPI.send(message, currentSession);
+        currentSession = resp.session_id;
+        removeTyping();
+        appendBubble("assistant", resp.content);
+        loadSessions();
+        // Update user usage
+        const user = Auth.getUser();
+        if (user) { user.usage = user.usage || {}; user.usage.chat_count = (user.usage.chat_count || 0) + 1; Auth.setUser(user); }
+        updateLimitBar();
+      } catch (e) {
+        removeTyping();
+        if (e.upgradeRequired) {
+          appendBubble("assistant", "⚠️ You've reached your daily free chat limit. [Upgrade to Pro](subscription.html) for unlimited conversations.");
+        } else {
+          appendBubble("assistant", `❌ Sorry, something went wrong: ${e.message}`);
+        }
+        showToast(e.message, "error");
+      } finally {
+        isTyping = false;
+        btn.disabled = false;
+      }
+    }
+
+    // Events
+    document.getElementById("send-btn").addEventListener("click", sendMessage);
+    document.getElementById("chat-input").addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+    // Auto-resize textarea
+    document.getElementById("chat-input").addEventListener("input", function() {
+      this.style.height = "auto";
+      this.style.height = Math.min(this.scrollHeight, 120) + "px";
+    });
+
+    // Quick questions
+    document.querySelectorAll(".quick-q").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.getElementById("chat-input").value = btn.dataset.q;
+        sendMessage();
+      });
+    });
+
+    // New chat
+    document.getElementById("new-chat-btn").addEventListener("click", () => {
+      currentSession = null;
+      document.getElementById("chat-messages").innerHTML = `
+        <div class="chat-welcome" id="welcome-msg">
+          <div class="emoji">🌍</div>
+          <h3>New conversation started</h3>
+          <p>What would you like to know about travel?</p>
+        </div>`;
+    });
+
+    // Clear history
+    document.getElementById("clear-btn").addEventListener("click", async () => {
+      if (!confirm("Clear this conversation?")) return;
+      try {
+        await ChatAPI.clearHistory(currentSession);
+        document.getElementById("chat-messages").innerHTML = `
+          <div class="chat-welcome" id="welcome-msg">
+            <div class="emoji">🗑️</div>
+            <h3>History cleared</h3>
+            <p>Start a fresh conversation below.</p>
+          </div>`;
+        currentSession = null;
+        loadSessions();
+      } catch (e) { showToast("Could not clear history", "error"); }
+    });
+
+    init();
+  </script>
+</body>
+</html>

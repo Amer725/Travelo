@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TravelAI — Trip Planner</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .planner-layout { display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .planner-form { position: sticky; top: 88px; height: fit-content; }
+    .budget-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .budget-option {
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: .75rem .5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+    .budget-option:hover { border-color: var(--teal); color: var(--teal); }
+    .budget-option.selected { border-color: var(--teal); background: var(--teal-pale); color: var(--teal-dark); }
+    .budget-option .emoji { font-size: 1.4rem; display: block; margin-bottom: .25rem; }
+    .interest-tags { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .interest-chip {
+      border: 1.5px solid var(--gray-200);
+      border-radius: 20px;
+      padding: .3rem .75rem;
+      font-size: .8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      color: var(--gray-600);
+    }
+    .interest-chip:hover { border-color: var(--teal); }
+    .interest-chip.selected { border-color: var(--teal); background: var(--teal-pale); color: var(--teal-dark); }
+    .result-area { min-height: 400px; }
+    .result-placeholder {
+      background: var(--white);
+      border: 2px dashed var(--gray-200);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 2rem;
+      text-align: center;
+      color: var(--gray-400);
+    }
+    .result-placeholder .emoji { font-size: 3rem; margin-bottom: 1rem; }
+    .itinerary-header {
+      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      padding: 2rem;
+      color: var(--white);
+    }
+    .itinerary-container { background: var(--white); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); }
+    .budget-breakdown {
+      background: var(--smoke);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-top: 1.5rem;
+    }
+    .budget-row { display: flex; justify-content: space-between; padding: .4rem 0; font-size: .9rem; border-bottom: 1px solid var(--gray-100); }
+    .budget-row:last-child { border-bottom: none; font-weight: 700; color: var(--navy); }
+    .tips-list { list-style: none; padding: 0; }
+    .tips-list li { display: flex; gap: .5rem; padding: .4rem 0; font-size: .9rem; }
+    .tips-list li::before { content: "💡"; flex-shrink: 0; }
+    .saved-trips { margin-top: 1.5rem; }
+    .trip-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .85rem 1rem;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      margin-bottom: .5rem;
+      background: var(--white);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .trip-item:hover { border-color: var(--teal); }
+    .trip-item-info { font-size: .88rem; }
+    .trip-item-title { font-weight: 600; color: var(--navy); }
+    .trip-item-meta { color: var(--gray-400); font-size: .78rem; }
+    @media (max-width: 900px) { .planner-layout { grid-template-columns: 1fr; } .planner-form { position: static; } }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand"><div class="logo-icon">✈️</div>Travel<span class="accent">AI</span></a>
+    <ul class="navbar-nav">
+      <li><a href="chat.html">Chat</a></li>
+      <li><a href="planner.html" class="active">Planner</a></li>
+      <li><a href="discover.html">Discover</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="nav-user" class="nav-user-info" style="display:none">
+        <span id="nav-username"></span><span id="nav-pro-badge" class="pro-badge" style="display:none">PRO</span>
+        <button id="nav-logout" class="btn btn-sm btn-outline-white">Logout</button>
+      </div>
+      <div id="nav-login"><a href="login.html" class="btn btn-sm btn-gold">Sign In</a></div>
+    </div>
+  </nav>
+
+  <div class="page-hero" style="padding:2.5rem 2rem">
+    <h1>🗓️ AI Trip <span class="hero-gold">Planner</span></h1>
+    <p style="color:rgba(255,255,255,.7);margin-top:.5rem">Enter your destination and preferences — get a full day-by-day itinerary powered by AI</p>
+  </div>
+
+  <div class="planner-layout">
+    <!-- Left: Form -->
+    <div class="planner-form">
+      <div class="card">
+        <div class="card-header">✈️ Plan Your Trip</div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:1.1rem">
+          <div class="form-group">
+            <label class="form-label">Destination *</label>
+            <input type="text" id="destination" class="form-control" placeholder="e.g. Tokyo, Japan · Paris · Bali">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Number of Days *</label>
+              <input type="number" id="days" class="form-control" min="1" max="30" value="7" placeholder="7">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Trip Type</label>
+              <select id="trip-type" class="form-control">
+                <option value="cultural">🏛️ Cultural</option>
+                <option value="adventure">🧗 Adventure</option>
+                <option value="beach">🏖️ Beach</option>
+                <option value="relaxing">🧘 Relaxing</option>
+                <option value="historical">🏰 Historical</option>
+                <option value="food">🍜 Food & Cuisine</option>
+                <option value="luxury">💎 Luxury</option>
+                <option value="family">👨‍👩‍👧 Family</option>
+                <option value="hiking">🥾 Hiking</option>
+                <option value="city">🌆 City Break</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Budget Level</label>
+            <div class="budget-selector">
+              <div class="budget-option selected" data-budget="low">
+                <span class="emoji">💚</span>Budget
+                <small style="font-weight:400;color:inherit;font-size:.72rem">$30–80/day</small>
+              </div>
+              <div class="budget-option" data-budget="medium">
+                <span class="emoji">💛</span>Mid-range
+                <small style="font-weight:400;color:inherit;font-size:.72rem">$80–200/day</small>
+              </div>
+              <div class="budget-option" data-budget="high">
+                <span class="emoji">💎</span>Luxury
+                <small style="font-weight:400;color:inherit;font-size:.72rem">$200+/day</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Interests (select any)</label>
+            <div class="interest-tags">
+              <span class="interest-chip" data-int="museums">🏛️ Museums</span>
+              <span class="interest-chip" data-int="beaches">🏖️ Beaches</span>
+              <span class="interest-chip" data-int="history">📜 History</span>
+              <span class="interest-chip" data-int="food">🍜 Food</span>
+              <span class="interest-chip" data-int="hiking">🥾 Hiking</span>
+              <span class="interest-chip" data-int="nightlife">🎉 Nightlife</span>
+              <span class="interest-chip" data-int="shopping">🛍️ Shopping</span>
+              <span class="interest-chip" data-int="photography">📸 Photography</span>
+              <span class="interest-chip" data-int="architecture">🏗️ Architecture</span>
+              <span class="interest-chip" data-int="nature">🌿 Nature</span>
+              <span class="interest-chip" data-int="wildlife">🦁 Wildlife</span>
+              <span class="interest-chip" data-int="art">🎨 Art</span>
+            </div>
+          </div>
+
+          <button id="generate-btn" class="btn btn-gold btn-block btn-lg">
+            ✨ Generate Itinerary
+          </button>
+
+          <p style="font-size:.78rem;text-align:center;color:var(--gray-400)">
+            Free plan: 3 trip plans · <a href="subscription.html" class="text-teal" style="font-weight:600">Upgrade for unlimited</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Saved trips -->
+      <div class="saved-trips" id="saved-trips-section" style="display:none">
+        <h4 class="mb-2" style="color:var(--navy)">📂 My Saved Trips</h4>
+        <div id="saved-trips-list"></div>
+      </div>
+    </div>
+
+    <!-- Right: Result -->
+    <div class="result-area" id="result-area">
+      <div class="result-placeholder">
+        <div class="emoji">✈️</div>
+        <h3>Your itinerary will appear here</h3>
+        <p>Fill in the form and click <strong>Generate Itinerary</strong> to get started.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    let selectedBudget = "low";
+    let selectedInterests = [];
+
+    initNav();
+    loadSavedTrips();
+
+    // Budget selector
+    document.querySelectorAll(".budget-option").forEach(el => {
+      el.addEventListener("click", () => {
+        document.querySelectorAll(".budget-option").forEach(b => b.classList.remove("selected"));
+        el.classList.add("selected");
+        selectedBudget = el.dataset.budget;
+      });
+    });
+
+    // Interest chips
+    document.querySelectorAll(".interest-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        chip.classList.toggle("selected");
+        const v = chip.dataset.int;
+        if (chip.classList.contains("selected")) {
+          if (!selectedInterests.includes(v)) selectedInterests.push(v);
+        } else {
+          selectedInterests = selectedInterests.filter(i => i !== v);
+        }
+      });
+    });
+
+    // Generate
+    document.getElementById("generate-btn").addEventListener("click", async () => {
+      const destination = document.getElementById("destination").value.trim();
+      const days        = parseInt(document.getElementById("days").value);
+      const tripType    = document.getElementById("trip-type").value;
+
+      if (!destination) { showToast("Please enter a destination.", "warning"); return; }
+      if (!days || days < 1 || days > 30) { showToast("Days must be between 1 and 30.", "warning"); return; }
+      if (!Auth.isLoggedIn()) {
+        showToast("Sign in to generate a trip plan.", "warning");
+        setTimeout(() => window.location.href = "login.html", 1500);
+        return;
+      }
+
+      const btn = document.getElementById("generate-btn");
+      setLoadingBtn(btn, true, "Generating your itinerary…");
+
+      document.getElementById("result-area").innerHTML = `
+        <div style="background:var(--white);border-radius:var(--radius-lg);padding:3rem;text-align:center;border:1px solid var(--gray-200)">
+          <div class="spinner spinner-dark" style="width:36px;height:36px;border-width:3px;margin:0 auto 1rem"></div>
+          <h3>Creating your personalized itinerary…</h3>
+          <p class="text-muted mt-1">Our AI is crafting a ${days}-day plan for ${destination}</p>
+        </div>`;
+
+      try {
+        const plan = await PlannerAPI.generate(destination, days, selectedBudget, tripType, selectedInterests);
+        renderItinerary(plan);
+        loadSavedTrips();
+        showToast("🎉 Itinerary generated!", "success");
+      } catch (e) {
+        if (e.upgradeRequired) {
+          document.getElementById("result-area").innerHTML = `
+            <div class="upgrade-banner" style="margin:0">
+              <div class="icon">⚡</div>
+              <div>
+                <strong>Free plan limit reached</strong><br>
+                You've used all 3 free trip plans. <a href="subscription.html">Upgrade to Pro</a> for unlimited trip planning.
+              </div>
+            </div>`;
+        } else {
+          document.getElementById("result-area").innerHTML = `
+            <div class="result-placeholder"><div class="emoji">❌</div><h3>Error</h3><p>${e.message}</p></div>`;
+          showToast(e.message, "error");
+        }
+      } finally {
+        setLoadingBtn(btn, false, "✨ Generate Itinerary");
+      }
+    });
+
+    function renderItinerary(plan) {
+      const it = plan.itinerary || plan;
+      const days = it.days || [];
+      const breakdown = it.budget_breakdown || {};
+      const tips = it.essential_tips || [];
+
+      let daysHtml = days.map(day => `
+        <div class="itinerary-day">
+          <div class="itinerary-day-header">
+            <div class="day-number">${day.day}</div>
+            <div class="day-theme">${day.theme || `Day ${day.day}`}</div>
+          </div>
+          <div class="itinerary-day-body">
+            ${renderSlot("☀️ Morning", day.morning)}
+            ${renderSlot("🌤️ Afternoon", day.afternoon)}
+            ${renderSlot("🌙 Evening", day.evening)}
+            ${day.tips ? `<div style="background:var(--gold-pale);border-radius:var(--radius-sm);padding:.6rem .85rem;font-size:.83rem;color:#92600a;margin-top:.5rem">💡 ${day.tips}</div>` : ""}
+          </div>
+        </div>`).join("");
+
+      let breakdownHtml = Object.entries(breakdown).map(([k, v]) => `
+        <div class="budget-row"><span>${k.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase())}</span><span>${v}</span></div>`).join("");
+
+      let tipsHtml = tips.map(t => `<li>${t}</li>`).join("");
+
+      document.getElementById("result-area").innerHTML = `
+        <div class="itinerary-container fade-in">
+          <div class="itinerary-header">
+            <h2 style="color:var(--white);font-size:1.6rem">${it.title || plan.title}</h2>
+            <p style="color:rgba(255,255,255,.75);margin-top:.4rem">${it.summary || ""}</p>
+            <div class="flex gap-2 mt-2" style="flex-wrap:wrap">
+              <span class="tag" style="background:rgba(255,255,255,.15);color:var(--white)">📍 ${plan.destination}</span>
+              <span class="tag" style="background:rgba(255,255,255,.15);color:var(--white)">📅 ${plan.days} Days</span>
+              <span class="tag" style="background:rgba(255,255,255,.15);color:var(--white)">${budgetLabel(plan.budget)}</span>
+              ${it.best_time_to_visit ? `<span class="tag" style="background:rgba(255,255,255,.15);color:var(--white)">🗓️ ${it.best_time_to_visit}</span>` : ""}
+            </div>
+          </div>
+          <div style="padding:1.5rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+              <h3 style="font-size:1.1rem">Day-by-Day Itinerary</h3>
+              <a href="dashboard.html" class="btn btn-sm btn-outline">View in Dashboard</a>
+            </div>
+            ${daysHtml}
+            ${breakdownHtml ? `
+              <div class="budget-breakdown mt-3">
+                <h4 class="mb-2">💰 Budget Breakdown</h4>
+                ${breakdownHtml}
+              </div>` : ""}
+            ${tipsHtml ? `
+              <div class="mt-3">
+                <h4 class="mb-2">📋 Essential Tips</h4>
+                <ul class="tips-list">${tipsHtml}</ul>
+              </div>` : ""}
+            ${it.currency ? `<p class="text-muted mt-2" style="font-size:.85rem">💱 Currency: ${it.currency}</p>` : ""}
+          </div>
+        </div>`;
+    }
+
+    function renderSlot(label, slot) {
+      if (!slot) return "";
+      return `
+        <div class="time-slot">
+          <div class="time-label">${label}</div>
+          <div class="time-content">
+            <h4>${slot.activity || ""}${slot.cost ? `<span class="cost-badge">${slot.cost}</span>` : ""}</h4>
+            <p>${slot.description || ""}</p>
+          </div>
+        </div>`;
+    }
+
+    async function loadSavedTrips() {
+      if (!Auth.isLoggedIn()) return;
+      try {
+        const trips = await PlannerAPI.listTrips();
+        const section = document.getElementById("saved-trips-section");
+        const list    = document.getElementById("saved-trips-list");
+        if (!trips.length) { section.style.display = "none"; return; }
+        section.style.display = "block";
+        list.innerHTML = trips.slice(0, 5).map(t => `
+          <div class="trip-item" onclick="viewTrip(${t.id})">
+            <div class="trip-item-info">
+              <div class="trip-item-title">${t.title}</div>
+              <div class="trip-item-meta">${t.days} days · ${budgetLabel(t.budget)} · ${formatDate(t.created_at)}</div>
+            </div>
+            <button onclick="event.stopPropagation();deleteTrip(${t.id})" class="btn btn-sm" style="background:none;border:none;color:var(--gray-400);font-size:1.1rem">🗑</button>
+          </div>`).join("");
+      } catch (e) { /* ignore */ }
+    }
+
+    async function viewTrip(id) {
+      try {
+        const plan = await PlannerAPI.getTrip(id);
+        renderItinerary(plan);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (e) { showToast("Could not load trip", "error"); }
+    }
+
+    async function deleteTrip(id) {
+      if (!confirm("Delete this trip?")) return;
+      try {
+        await PlannerAPI.deleteTrip(id);
+        loadSavedTrips();
+        showToast("Trip deleted", "info");
+      } catch (e) { showToast("Could not delete trip", "error"); }
+    }
+
+    window.viewTrip   = viewTrip;
+    window.deleteTrip = deleteTrip;
+  </script>
+</body>
+</html>

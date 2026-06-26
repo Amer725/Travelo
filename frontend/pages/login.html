@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TravelAI — Login</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+    .auth-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100vh - 68px);
+    }
+    .auth-left {
+      background: linear-gradient(160deg, var(--navy) 0%, var(--navy-light) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .auth-left::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1.5' fill='rgba(255,255,255,.06)'/%3E%3C/svg%3E") repeat;
+    }
+    .auth-left h2 { color: var(--white); font-size: 2rem; margin-bottom: 1rem; position: relative; }
+    .auth-left p { color: rgba(255,255,255,.7); position: relative; max-width: 320px; }
+    .auth-feature {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      padding: .85rem 1.1rem;
+      text-align: left;
+      margin-top: .75rem;
+      width: 100%;
+      max-width: 340px;
+      position: relative;
+    }
+    .auth-feature-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .auth-feature-text { color: rgba(255,255,255,.85); font-size: .88rem; }
+    .auth-right {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+      background: var(--smoke);
+    }
+    .auth-box {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 420px;
+      border: 1px solid var(--gray-200);
+    }
+    .tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 1.75rem; }
+    .tab-btn {
+      flex: 1;
+      padding: .75rem;
+      background: none;
+      border: none;
+      font-family: var(--font-body);
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--gray-400);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color .2s, border-color .2s;
+    }
+    .tab-btn.active { color: var(--teal); border-color: var(--teal); }
+    .form-panel { display: none; }
+    .form-panel.active { display: block; }
+    .divider-text { position: relative; text-align: center; margin: 1.25rem 0; }
+    .divider-text::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--gray-200);
+    }
+    .divider-text span {
+      background: var(--white);
+      padding: 0 .75rem;
+      position: relative;
+      color: var(--gray-400);
+      font-size: .8rem;
+    }
+    .error-box {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: var(--radius-sm);
+      padding: .75rem 1rem;
+      font-size: .88rem;
+      color: var(--danger);
+      display: none;
+    }
+    @media (max-width: 768px) {
+      .auth-layout { grid-template-columns: 1fr; }
+      .auth-left { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand">
+      <div class="logo-icon">✈️</div>Travel<span class="accent">AI</span>
+    </a>
+  </nav>
+
+  <div class="auth-layout">
+    <!-- Left panel -->
+    <div class="auth-left">
+      <div style="position:relative;font-size:3rem;margin-bottom:1rem">🌍</div>
+      <h2>Plan Smarter.<br>Travel Better.</h2>
+      <p>Join TravelAI and unlock AI-powered trip planning, destination discovery, and your personal travel assistant.</p>
+      <div class="auth-feature">
+        <div class="auth-feature-icon">💬</div>
+        <div class="auth-feature-text"><strong style="color:#fff">AI Chatbot</strong> — 24/7 travel advice</div>
+      </div>
+      <div class="auth-feature">
+        <div class="auth-feature-icon">🗓️</div>
+        <div class="auth-feature-text"><strong style="color:#fff">Trip Planner</strong> — Full itineraries in seconds</div>
+      </div>
+      <div class="auth-feature">
+        <div class="auth-feature-icon">🧭</div>
+        <div class="auth-feature-text"><strong style="color:#fff">Discover</strong> — Top 10 recommendations per country</div>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="auth-right">
+      <div class="auth-box">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="login">Sign In</button>
+          <button class="tab-btn" data-tab="register">Create Account</button>
+        </div>
+
+        <!-- Error box -->
+        <div class="error-box" id="error-box"></div>
+
+        <!-- Login -->
+        <div class="form-panel active" id="panel-login">
+          <h3 style="margin-bottom:1.5rem">Welcome back ✈️</h3>
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="form-group">
+              <label class="form-label">Email address</label>
+              <input type="email" id="login-email" class="form-control" placeholder="you@email.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" id="login-password" class="form-control" placeholder="••••••••">
+            </div>
+            <button id="login-btn" class="btn btn-primary btn-block btn-lg mt-1">Sign In</button>
+          </div>
+          <p class="text-center mt-3" style="font-size:.88rem;color:var(--gray-400)">
+            Don't have an account? <a href="#" class="text-teal" id="switch-register" style="font-weight:600">Sign up free</a>
+          </p>
+        </div>
+
+        <!-- Register -->
+        <div class="form-panel" id="panel-register">
+          <h3 style="margin-bottom:1.5rem">Start your journey 🌏</h3>
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" id="reg-name" class="form-control" placeholder="Jane Doe">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" id="reg-username" class="form-control" placeholder="janedoe">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email address</label>
+              <input type="email" id="reg-email" class="form-control" placeholder="you@email.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" id="reg-password" class="form-control" placeholder="Min. 8 characters">
+            </div>
+            <button id="register-btn" class="btn btn-gold btn-block btn-lg mt-1">Create Free Account</button>
+          </div>
+          <p class="text-center mt-3" style="font-size:.88rem;color:var(--gray-400)">
+            Already have an account? <a href="#" class="text-teal" id="switch-login" style="font-weight:600">Sign in</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    // Redirect if already logged in
+    if (Auth.isLoggedIn()) window.location.href = "/pages/dashboard.html";
+
+    // Check URL param for default tab
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "register") switchTab("register");
+
+    function switchTab(name) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+      document.querySelectorAll(".form-panel").forEach(p => p.classList.toggle("active", p.id === `panel-${name}`));
+      document.getElementById("error-box").style.display = "none";
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+    document.getElementById("switch-register").addEventListener("click", e => { e.preventDefault(); switchTab("register"); });
+    document.getElementById("switch-login").addEventListener("click", e => { e.preventDefault(); switchTab("login"); });
+
+    function showError(msg) {
+      const box = document.getElementById("error-box");
+      box.textContent = msg;
+      box.style.display = "block";
+    }
+
+    // Login
+    document.getElementById("login-btn").addEventListener("click", async () => {
+      const email = document.getElementById("login-email").value.trim();
+      const pass  = document.getElementById("login-password").value;
+      if (!email || !pass) return showError("Please fill in all fields.");
+      const btn = document.getElementById("login-btn");
+      setLoadingBtn(btn, true, "Signing in…");
+      try {
+        await AuthAPI.login(email, pass);
+        window.location.href = "/pages/dashboard.html";
+      } catch (e) {
+        showError(e.message);
+        setLoadingBtn(btn, false, "Sign In");
+      }
+    });
+
+    // Register
+    document.getElementById("register-btn").addEventListener("click", async () => {
+      const name     = document.getElementById("reg-name").value.trim();
+      const username = document.getElementById("reg-username").value.trim();
+      const email    = document.getElementById("reg-email").value.trim();
+      const pass     = document.getElementById("reg-password").value;
+      if (!username || !email || !pass) return showError("Please fill in all required fields.");
+      if (pass.length < 6) return showError("Password must be at least 6 characters.");
+      const btn = document.getElementById("register-btn");
+      setLoadingBtn(btn, true, "Creating account…");
+      try {
+        await AuthAPI.register(email, username, pass, name);
+        window.location.href = "/pages/dashboard.html";
+      } catch (e) {
+        showError(e.message);
+        setLoadingBtn(btn, false, "Create Free Account");
+      }
+    });
+
+    // Enter key support
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        const activePanel = document.querySelector(".form-panel.active");
+        if (activePanel.id === "panel-login") document.getElementById("login-btn").click();
+        else document.getElementById("register-btn").click();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TravelAI — Dashboard</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .dashboard-layout { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .welcome-bar {
+      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+      border-radius: var(--radius-lg);
+      padding: 2rem 2.5rem;
+      color: var(--white);
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .welcome-bar::after {
+      content: "✈️";
+      position: absolute;
+      right: 2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 5rem;
+      opacity: .08;
+    }
+    .welcome-bar h2 { color: var(--white); font-size: 1.5rem; margin-bottom: .25rem; }
+    .welcome-bar p  { color: rgba(255,255,255,.7); font-size: .9rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .usage-bar { height: 6px; background: var(--gray-200); border-radius: 3px; margin-top: .5rem; overflow: hidden; }
+    .usage-fill { height: 100%; background: linear-gradient(90deg, var(--teal), var(--teal-dark)); border-radius: 3px; transition: width .6s; }
+    .usage-fill.warning { background: linear-gradient(90deg, var(--warning), #d97706); }
+    .usage-fill.danger  { background: linear-gradient(90deg, var(--danger), #b91c1c); }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .trip-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: all .2s;
+      cursor: pointer;
+    }
+    .trip-card:hover { border-color: var(--teal); box-shadow: var(--shadow-sm); }
+    .trip-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .trip-info { flex: 1; min-width: 0; }
+    .trip-title { font-weight: 600; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .trip-meta  { font-size: .8rem; color: var(--gray-400); margin-top: .2rem; }
+    .status-badge {
+      font-size: .7rem;
+      font-weight: 700;
+      padding: .2rem .55rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .status-draft     { background: var(--gray-100); color: var(--gray-600); }
+    .status-confirmed { background: var(--teal-pale); color: var(--teal-dark); }
+    .status-archived  { background: var(--gold-pale); color: #92600a; }
+    .tab-nav { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 1.5rem; gap: .25rem; }
+    .tab-link {
+      padding: .65rem 1.1rem;
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--gray-400);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all .2s;
+    }
+    .tab-link.active { color: var(--teal); border-color: var(--teal); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .profile-avatar {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+      color: var(--white);
+      flex-shrink: 0;
+    }
+    .subscription-card {
+      background: linear-gradient(135deg, var(--gold-pale), #fff9e6);
+      border: 1.5px solid var(--gold);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    .pro-features { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .75rem; margin-top: 1rem; }
+    .pro-feature-item { display: flex; gap: .5rem; font-size: .88rem; align-items: flex-start; }
+    .pro-feature-item .check { color: var(--teal); }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand"><div class="logo-icon">✈️</div>Travel<span class="accent">AI</span></a>
+    <ul class="navbar-nav">
+      <li><a href="chat.html">Chat</a></li>
+      <li><a href="planner.html">Planner</a></li>
+      <li><a href="discover.html">Discover</a></li>
+      <li><a href="dashboard.html" class="active">Dashboard</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="nav-user" class="nav-user-info" style="display:none">
+        <span id="nav-username"></span>
+        <span id="nav-pro-badge" class="pro-badge" style="display:none">PRO</span>
+        <button id="nav-logout" class="btn btn-sm btn-outline-white">Logout</button>
+      </div>
+      <div id="nav-login"><a href="login.html" class="btn btn-sm btn-gold">Sign In</a></div>
+    </div>
+  </nav>
+
+  <div class="dashboard-layout">
+
+    <!-- Welcome bar -->
+    <div class="welcome-bar">
+      <div>
+        <h2>Welcome back, <span id="welcome-name">Traveler</span>! ✈️</h2>
+        <p id="welcome-sub-text">Here's your travel activity overview.</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="planner.html" class="btn btn-gold">+ New Trip</a>
+        <a href="subscription.html" id="upgrade-cta" class="btn btn-outline-white" style="display:none">⚡ Upgrade to Pro</a>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon gold">✈️</div>
+        <div><div class="stat-value" id="stat-trips">—</div><div class="stat-label">Trip Plans</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon teal">💬</div>
+        <div><div class="stat-value" id="stat-chats">—</div><div class="stat-label">Chat Messages</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon navy">🧭</div>
+        <div><div class="stat-value" id="stat-recs">—</div><div class="stat-label">Recommendations</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon gold">⭐</div>
+        <div>
+          <div class="stat-value" id="stat-plan-name">Free</div>
+          <div class="stat-label">Current Plan</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Usage meters (free plan only) -->
+    <div id="usage-section" class="card mb-4" style="display:none">
+      <div class="card-header">📊 Free Plan Usage</div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:1rem">
+        <div>
+          <div class="flex justify-between" style="font-size:.85rem;margin-bottom:.3rem">
+            <span>Chat Messages Today</span>
+            <span id="chat-usage-label">0 / 10</span>
+          </div>
+          <div class="usage-bar"><div class="usage-fill" id="chat-usage-bar" style="width:0%"></div></div>
+        </div>
+        <div>
+          <div class="flex justify-between" style="font-size:.85rem;margin-bottom:.3rem">
+            <span>Trip Plans</span>
+            <span id="plan-usage-label">0 / 3</span>
+          </div>
+          <div class="usage-bar"><div class="usage-fill" id="plan-usage-bar" style="width:0%"></div></div>
+        </div>
+        <div>
+          <div class="flex justify-between" style="font-size:.85rem;margin-bottom:.3rem">
+            <span>Recommendations</span>
+            <span id="rec-usage-label">0 / 5</span>
+          </div>
+          <div class="usage-bar"><div class="usage-fill" id="rec-usage-bar" style="width:0%"></div></div>
+        </div>
+        <a href="subscription.html" class="btn btn-gold btn-block mt-1">⚡ Upgrade to Pro — Unlimited Everything</a>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-nav">
+      <div class="tab-link active" data-tab="trips">🗓️ My Trips</div>
+      <div class="tab-link" data-tab="profile">👤 Profile</div>
+      <div class="tab-link" data-tab="subscription">💳 Subscription</div>
+    </div>
+
+    <!-- Tab: Trips -->
+    <div class="tab-panel active" id="tab-trips">
+      <div class="section-header">
+        <h3 id="trips-count">Your Saved Trips</h3>
+        <a href="planner.html" class="btn btn-primary btn-sm">+ New Trip</a>
+      </div>
+      <div id="trips-list" style="display:flex;flex-direction:column;gap:.75rem">
+        <div style="text-align:center;padding:3rem;color:var(--gray-400)">
+          <div style="font-size:2.5rem;margin-bottom:.75rem">🗓️</div>
+          <p>Loading your trips…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Profile -->
+    <div class="tab-panel" id="tab-profile">
+      <div class="card" style="max-width:560px">
+        <div class="card-header">👤 Profile Settings</div>
+        <div class="card-body">
+          <div class="flex gap-3 mb-3 items-center">
+            <div class="profile-avatar" id="avatar-circle">👤</div>
+            <div>
+              <h4 id="profile-name-display">—</h4>
+              <p style="font-size:.85rem;color:var(--gray-400)" id="profile-email-display">—</p>
+              <span id="profile-plan-badge" class="pro-badge" style="display:none">PRO</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="edit-name" class="form-control" placeholder="Your full name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <input type="text" id="edit-username" class="form-control" placeholder="username">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="text" id="edit-email" class="form-control" disabled>
+            </div>
+            <button id="save-profile-btn" class="btn btn-primary">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Subscription -->
+    <div class="tab-panel" id="tab-subscription">
+      <div id="sub-content">Loading…</div>
+    </div>
+
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    initNav();
+    if (!Auth.isLoggedIn()) window.location.href = "login.html";
+
+    async function init() {
+      const user = await AuthAPI.me().catch(() => null);
+      if (!user) return AuthAPI.logout();
+
+      // Welcome bar
+      document.getElementById("welcome-name").textContent = user.full_name?.split(" ")[0] || user.username;
+      if (!user.is_pro) {
+        document.getElementById("upgrade-cta").style.display = "inline-flex";
+        document.getElementById("welcome-sub-text").textContent = "You're on the Free plan. Upgrade for unlimited access.";
+      } else {
+        document.getElementById("welcome-sub-text").textContent = "You're on the Pro plan. Enjoy unlimited access!";
+      }
+
+      // Stats
+      document.getElementById("stat-trips").textContent = user.usage?.plan_count || 0;
+      document.getElementById("stat-chats").textContent = user.usage?.chat_count || 0;
+      document.getElementById("stat-recs").textContent  = user.usage?.recommend_count || 0;
+      document.getElementById("stat-plan-name").textContent = user.is_pro ? "Pro ⭐" : "Free";
+
+      // Usage meters
+      if (!user.is_pro) {
+        document.getElementById("usage-section").style.display = "block";
+        setUsageBar("chat", user.usage?.chat_count || 0, 10);
+        setUsageBar("plan", user.usage?.plan_count || 0, 3);
+        setUsageBar("rec",  user.usage?.recommend_count || 0, 5);
+      }
+
+      // Profile tab
+      document.getElementById("avatar-circle").textContent =
+        (user.full_name || user.username || "?")[0].toUpperCase();
+      document.getElementById("profile-name-display").textContent = user.full_name || user.username;
+      document.getElementById("profile-email-display").textContent = user.email;
+      if (user.is_pro) document.getElementById("profile-plan-badge").style.display = "inline-block";
+      document.getElementById("edit-name").value     = user.full_name || "";
+      document.getElementById("edit-username").value = user.username || "";
+      document.getElementById("edit-email").value    = user.email || "";
+
+      // Load trips
+      await loadTrips();
+      // Load subscription
+      await loadSubscription(user);
+    }
+
+    function setUsageBar(key, used, max) {
+      const pct = Math.min((used / max) * 100, 100);
+      document.getElementById(`${key}-usage-label`).textContent = `${used} / ${max}`;
+      const bar = document.getElementById(`${key}-usage-bar`);
+      bar.style.width = pct + "%";
+      if (pct >= 100) bar.classList.add("danger");
+      else if (pct >= 70) bar.classList.add("warning");
+    }
+
+    async function loadTrips() {
+      try {
+        const trips = await PlannerAPI.listTrips();
+        const list  = document.getElementById("trips-list");
+        document.getElementById("trips-count").textContent = `Your Saved Trips (${trips.length})`;
+
+        if (!trips.length) {
+          list.innerHTML = `
+            <div style="text-align:center;padding:3rem;color:var(--gray-400)">
+              <div style="font-size:2.5rem;margin-bottom:.75rem">✈️</div>
+              <h3>No trips yet</h3>
+              <p>Plan your first trip with AI assistance.</p>
+              <a href="planner.html" class="btn btn-primary mt-3">Plan a Trip</a>
+            </div>`;
+          return;
+        }
+        list.innerHTML = trips.map(t => `
+          <div class="trip-card" onclick="window.location.href='planner.html'">
+            <div class="trip-icon">✈️</div>
+            <div class="trip-info">
+              <div class="trip-title">${t.title}</div>
+              <div class="trip-meta">📍 ${t.destination} · 📅 ${t.days} days · ${budgetLabel(t.budget)} · ${formatDate(t.created_at)}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0">
+              <span class="status-badge status-${t.status}">${t.status}</span>
+              <div class="flex gap-1">
+                <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();confirmTrip(${t.id})">✓</button>
+                <button class="btn btn-sm" style="background:none;border:1px solid var(--gray-200);color:var(--danger)" 
+                        onclick="event.stopPropagation();deleteTrip(${t.id})">🗑</button>
+              </div>
+            </div>
+          </div>`).join("");
+      } catch(e) { showToast("Could not load trips", "error"); }
+    }
+
+    async function confirmTrip(id) {
+      try {
+        await PlannerAPI.updateStatus(id, "confirmed");
+        await loadTrips();
+        showToast("Trip confirmed! ✓", "success");
+      } catch(e) { showToast(e.message, "error"); }
+    }
+
+    async function deleteTrip(id) {
+      if (!confirm("Delete this trip plan?")) return;
+      try {
+        await PlannerAPI.deleteTrip(id);
+        await loadTrips();
+        showToast("Trip deleted.", "info");
+        const user = Auth.getUser();
+        if (user) { document.getElementById("stat-trips").textContent = (user.usage?.plan_count || 1) - 1; }
+      } catch(e) { showToast(e.message, "error"); }
+    }
+
+    async function loadSubscription(user) {
+      const content = document.getElementById("sub-content");
+      try {
+        const status = await SubAPI.getStatus();
+        if (user.is_pro && status.subscription) {
+          const sub = status.subscription;
+          content.innerHTML = `
+            <div class="subscription-card">
+              <div class="flex items-center gap-2 mb-3">
+                <span style="font-size:1.5rem">⭐</span>
+                <div>
+                  <h3 style="color:var(--navy)">Pro Plan Active</h3>
+                  <p style="font-size:.85rem;color:var(--gray-600)">Transaction: ${sub.transaction_id}</p>
+                </div>
+                <span class="pro-badge" style="margin-left:auto">PRO</span>
+              </div>
+              <div class="pro-features">
+                <div class="pro-feature-item"><span class="check">✓</span> Unlimited chat messages</div>
+                <div class="pro-feature-item"><span class="check">✓</span> Unlimited trip plans</div>
+                <div class="pro-feature-item"><span class="check">✓</span> Unlimited recommendations</div>
+                <div class="pro-feature-item"><span class="check">✓</span> Priority AI responses</div>
+                <div class="pro-feature-item"><span class="check">✓</span> PDF itinerary export</div>
+                <div class="pro-feature-item"><span class="check">✓</span> Priority support</div>
+              </div>
+              <div class="divider"></div>
+              <div style="font-size:.85rem;color:var(--gray-600)">
+                <div class="flex justify-between mb-1"><span>Amount paid</span><span><strong>$${sub.amount_paid}</strong></span></div>
+                <div class="flex justify-between mb-1"><span>Started</span><span>${formatDate(sub.starts_at)}</span></div>
+                <div class="flex justify-between"><span>Expires</span><span>${formatDate(sub.expires_at)}</span></div>
+              </div>
+              <button id="cancel-sub-btn" class="btn btn-outline btn-sm mt-3" style="color:var(--danger);border-color:var(--danger)">Cancel Subscription</button>
+            </div>`;
+          document.getElementById("cancel-sub-btn").addEventListener("click", cancelSub);
+        } else {
+          content.innerHTML = `
+            <div class="card">
+              <div class="card-body text-center">
+                <div style="font-size:2.5rem;margin-bottom:1rem">🚀</div>
+                <h3>You're on the Free Plan</h3>
+                <p class="text-muted mt-1 mb-3">Upgrade to Pro for unlimited access to all features.</p>
+                <a href="subscription.html" class="btn btn-gold btn-lg">View Pro Plans →</a>
+              </div>
+            </div>`;
+        }
+      } catch(e) { content.innerHTML = `<p class="text-muted">Could not load subscription info.</p>`; }
+    }
+
+    async function cancelSub() {
+      if (!confirm("Are you sure you want to cancel your Pro subscription?")) return;
+      try {
+        await SubAPI.cancel("User requested cancellation");
+        showToast("Subscription cancelled.", "info");
+        await init();
+      } catch(e) { showToast(e.message, "error"); }
+    }
+
+    // Profile save
+    document.getElementById("save-profile-btn").addEventListener("click", async () => {
+      const btn = document.getElementById("save-profile-btn");
+      setLoadingBtn(btn, true, "Saving…");
+      try {
+        await AuthAPI.updateProfile({
+          full_name: document.getElementById("edit-name").value.trim(),
+          username:  document.getElementById("edit-username").value.trim(),
+        });
+        showToast("Profile updated!", "success");
+      } catch(e) { showToast(e.message, "error"); }
+      finally { setLoadingBtn(btn, false, "Save Changes"); }
+    });
+
+    // Tabs
+    document.querySelectorAll(".tab-link").forEach(link => {
+      link.addEventListener("click", () => {
+        document.querySelectorAll(".tab-link,.tab-panel").forEach(el => el.classList.remove("active"));
+        link.classList.add("active");
+        document.getElementById(`tab-${link.dataset.tab}`).classList.add("active");
+      });
+    });
+
+    window.confirmTrip = confirmTrip;
+    window.deleteTrip  = deleteTrip;
+    init();
+  </script>
+</body>
+</html>

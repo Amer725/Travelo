@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TravelAI — Payment Confirmed</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+    .confirm-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+      background: var(--smoke);
+    }
+    .confirm-card {
+      background: var(--white);
+      border-radius: var(--radius-xl);
+      padding: 3rem 2.5rem;
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--gray-200);
+    }
+    .confetti-icon {
+      width: 90px; height: 90px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.8rem;
+      margin: 0 auto 1.5rem;
+      box-shadow: 0 16px 48px rgba(20,184,166,.3);
+      animation: bounceIn .6s cubic-bezier(.36,.07,.19,.97);
+    }
+    @keyframes bounceIn {
+      0%   { transform: scale(0); opacity: 0; }
+      60%  { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .receipt-box {
+      background: var(--smoke);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      text-align: left;
+    }
+    .receipt-line {
+      display: flex;
+      justify-content: space-between;
+      padding: .45rem 0;
+      font-size: .88rem;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .receipt-line:last-child { border-bottom: none; font-weight: 700; }
+    .receipt-line .label { color: var(--gray-400); }
+    .receipt-line .value { color: var(--gray-800); font-weight: 500; }
+    .what-next {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: .75rem;
+      margin: 1.5rem 0;
+    }
+    .next-item {
+      background: var(--smoke);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: .85rem .75rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      text-decoration: none;
+    }
+    .next-item:hover { border-color: var(--teal); background: var(--teal-pale); }
+    .next-item .icon { font-size: 1.5rem; margin-bottom: .3rem; }
+    .next-item span { font-size: .78rem; font-weight: 600; color: var(--navy); display: block; }
+    .pro-activated {
+      background: linear-gradient(135deg, var(--gold-pale), #fffbeb);
+      border: 1.5px solid var(--gold);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+    .pro-activated .badge { font-size: 1.4rem; }
+    .pro-activated p { font-size: .88rem; color: #92600a; margin: 0; text-align: left; }
+    @keyframes shimmer { 0%,100% { opacity:1 } 50% { opacity:.6 } }
+    .animate-shimmer { animation: shimmer 2s infinite; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand"><div class="logo-icon">✈️</div>Travel<span class="accent">AI</span></a>
+    <div class="nav-actions">
+      <div id="nav-user" class="nav-user-info" style="display:none">
+        <span id="nav-username"></span>
+        <span id="nav-pro-badge" class="pro-badge" style="display:none">PRO</span>
+        <button id="nav-logout" class="btn btn-sm btn-outline-white">Logout</button>
+      </div>
+      <div id="nav-login"></div>
+    </div>
+  </nav>
+
+  <div class="confirm-wrapper">
+    <div class="confirm-card fade-in">
+      <!-- Success icon -->
+      <div class="confetti-icon">🎉</div>
+
+      <h1 style="font-size:2rem;margin-bottom:.5rem">Payment Successful!</h1>
+      <p style="color:var(--gray-400);font-size:.95rem">
+        Welcome to TravelAI Pro. Your account has been upgraded.
+      </p>
+
+      <!-- Pro activated badge -->
+      <div class="pro-activated">
+        <div class="badge">⭐</div>
+        <p><strong style="color:#92600a">Pro access activated!</strong> You now have unlimited chat, trip plans, and recommendations. Start exploring below.</p>
+      </div>
+
+      <!-- Receipt -->
+      <div class="receipt-box">
+        <div style="font-size:.8rem;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">Payment Receipt</div>
+        <div class="receipt-line">
+          <span class="label">Plan</span>
+          <span class="value" id="receipt-plan">—</span>
+        </div>
+        <div class="receipt-line">
+          <span class="label">Transaction ID</span>
+          <span class="value" id="receipt-tx" style="font-family:monospace;font-size:.8rem">—</span>
+        </div>
+        <div class="receipt-line">
+          <span class="label">Card</span>
+          <span class="value" id="receipt-card">—</span>
+        </div>
+        <div class="receipt-line">
+          <span class="label">Access until</span>
+          <span class="value" id="receipt-expires">—</span>
+        </div>
+        <div class="receipt-line">
+          <span class="label">Total charged</span>
+          <span class="value text-teal" id="receipt-amount">—</span>
+        </div>
+      </div>
+
+      <!-- What's next -->
+      <h4 style="margin-bottom:.75rem;font-size:.9rem;color:var(--gray-600)">What would you like to do first?</h4>
+      <div class="what-next">
+        <a href="planner.html" class="next-item">
+          <div class="icon">🗓️</div>
+          <span>Plan a Trip</span>
+        </a>
+        <a href="discover.html" class="next-item">
+          <div class="icon">🧭</div>
+          <span>Discover Places</span>
+        </a>
+        <a href="chat.html" class="next-item">
+          <div class="icon">💬</div>
+          <span>Chat with AI</span>
+        </a>
+      </div>
+
+      <div class="flex gap-2 justify-center">
+        <a href="dashboard.html" class="btn btn-primary btn-lg">Go to Dashboard →</a>
+      </div>
+
+      <p style="font-size:.78rem;color:var(--gray-400);margin-top:1.5rem">
+        A receipt has been emailed to your registered address.<br>
+        Need help? Contact <strong>support@travelai.com</strong>
+      </p>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    initNav();
+
+    // Read query params
+    const p = new URLSearchParams(window.location.search);
+    const plan    = p.get("plan")    || "Pro Plan";
+    const amount  = p.get("amount")  || "9.99";
+    const tx      = p.get("tx")      || "—";
+    const last4   = p.get("last4")   || "••••";
+    const expires = p.get("expires") || "";
+
+    document.getElementById("receipt-plan").textContent    = plan;
+    document.getElementById("receipt-tx").textContent      = tx;
+    document.getElementById("receipt-card").textContent    = `**** **** **** ${last4}`;
+    document.getElementById("receipt-expires").textContent = formatDate(expires) || "—";
+    document.getElementById("receipt-amount").textContent  = `$${amount} USD`;
+
+    // Update user pro status
+    const user = Auth.getUser();
+    if (user) { user.is_pro = true; Auth.setUser(user); }
+
+    // If no transaction ID in URL, redirect to dashboard
+    if (!tx || tx === "—") {
+      setTimeout(() => window.location.href = "dashboard.html", 3000);
+    }
+  </script>
+</body>
+</html>

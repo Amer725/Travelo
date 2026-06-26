@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TravelAI — Secure Checkout</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .checkout-layout {
+      max-width: 980px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 2rem;
+      align-items: start;
+    }
+    .order-summary {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--gray-200);
+      position: sticky;
+      top: 88px;
+    }
+    .order-header {
+      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+      padding: 1.5rem;
+      color: var(--white);
+    }
+    .order-header h3 { color: var(--white); font-size: 1.1rem; }
+    .order-body { padding: 1.5rem; }
+    .order-line { display: flex; justify-content: space-between; align-items: center; padding: .6rem 0; font-size: .9rem; border-bottom: 1px solid var(--gray-100); }
+    .order-line:last-child { border-bottom: none; }
+    .order-total { font-weight: 700; font-size: 1.05rem; color: var(--navy); }
+    .feature-list { list-style: none; margin-top: .75rem; }
+    .feature-list li { display: flex; gap: .5rem; font-size: .85rem; padding: .35rem 0; color: var(--gray-600); }
+    .feature-list li .check { color: var(--teal); }
+    .secure-badges { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--gray-100); }
+    .secure-badge {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+      font-size: .75rem;
+      color: var(--gray-400);
+      font-weight: 500;
+    }
+    .card-preview-input {
+      background: linear-gradient(135deg, var(--navy) 0%, #1a3a6e 100%);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      color: var(--white);
+      margin-bottom: 1.5rem;
+      min-height: 120px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-preview-input::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      right: -5%;
+      width: 180px;
+      height: 180px;
+      background: rgba(212,160,23,.12);
+      border-radius: 50%;
+    }
+    .card-preview-input::after {
+      content: "";
+      position: absolute;
+      bottom: -30%;
+      right: 10%;
+      width: 130px;
+      height: 130px;
+      background: rgba(20,184,166,.08);
+      border-radius: 50%;
+    }
+    .card-chip { font-size: 1.4rem; margin-bottom: .75rem; }
+    .card-number-display {
+      font-size: 1.2rem;
+      letter-spacing: .22em;
+      font-family: 'Courier New', monospace;
+      margin-bottom: .75rem;
+      position: relative;
+      z-index: 1;
+    }
+    .card-meta { display: flex; justify-content: space-between; font-size: .78rem; opacity: .75; position: relative; z-index: 1; }
+    .steps-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 2rem;
+    }
+    .step-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--gray-200);
+      color: var(--gray-400);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .82rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .step-dot.active { background: var(--teal); color: var(--white); }
+    .step-dot.done   { background: var(--teal-dark); color: var(--white); }
+    .step-connector { flex: 1; height: 2px; background: var(--gray-200); }
+    .step-connector.done { background: var(--teal-dark); }
+    .step-label { font-size: .72rem; color: var(--gray-400); text-align: center; position: absolute; bottom: -18px; white-space: nowrap; left: 50%; transform: translateX(-50%); }
+    .input-with-icon { position: relative; }
+    .input-with-icon .icon { position: absolute; right: .85rem; top: 50%; transform: translateY(-50%); font-size: 1.1rem; pointer-events: none; }
+    .error-alert {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: var(--radius-sm);
+      padding: .85rem 1rem;
+      color: var(--danger);
+      font-size: .88rem;
+      display: none;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 768px) {
+      .checkout-layout { grid-template-columns: 1fr; }
+      .order-summary { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand"><div class="logo-icon">✈️</div>Travel<span class="accent">AI</span></a>
+    <ul class="navbar-nav">
+      <li><a href="subscription.html">← Back to Plans</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="nav-user" class="nav-user-info" style="display:none">
+        <span id="nav-username"></span>
+        <span id="nav-pro-badge" class="pro-badge" style="display:none">PRO</span>
+        <button id="nav-logout" class="btn btn-sm btn-outline-white">Logout</button>
+      </div>
+      <div id="nav-login"></div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <div style="background:linear-gradient(135deg,var(--navy),var(--navy-light));padding:2rem 2rem 1.5rem;text-align:center">
+    <h2 style="color:var(--white);font-size:1.5rem">🔒 Secure Checkout</h2>
+    <p style="color:rgba(255,255,255,.65);font-size:.88rem">Your payment is protected with 256-bit SSL encryption</p>
+  </div>
+
+  <div class="checkout-layout">
+    <!-- Left: Payment Form -->
+    <div>
+      <!-- Steps -->
+      <div style="position:relative;margin-bottom:2.5rem">
+        <div class="steps-indicator">
+          <div class="step-dot done">✓<span class="step-label">Account</span></div>
+          <div class="step-connector done"></div>
+          <div class="step-dot active">2<span class="step-label">Payment</span></div>
+          <div class="step-connector"></div>
+          <div class="step-dot">3<span class="step-label">Confirm</span></div>
+        </div>
+      </div>
+
+      <!-- Card preview -->
+      <div class="card-preview-input">
+        <div class="card-chip">💳</div>
+        <div class="card-number-display" id="card-number-preview">•••• •••• •••• ••••</div>
+        <div class="card-meta">
+          <div>
+            <div style="font-size:.65rem;opacity:.6;text-transform:uppercase;letter-spacing:.1em">Card Holder</div>
+            <div id="card-holder-preview" style="font-size:.88rem">YOUR NAME</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:.65rem;opacity:.6;text-transform:uppercase;letter-spacing:.1em">Expires</div>
+            <div id="card-expiry-preview" style="font-size:.88rem">MM/YY</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-alert" id="error-alert"></div>
+
+      <!-- Form -->
+      <div class="payment-form">
+        <h3 style="margin-bottom:1.5rem;font-size:1.1rem">💳 Card Details</h3>
+
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div class="form-group">
+            <label class="form-label">Cardholder Name</label>
+            <input type="text" id="card-holder" class="form-control" placeholder="As shown on card" autocomplete="cc-name">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Card Number</label>
+            <div class="input-with-icon">
+              <input type="text" id="card-number" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19" autocomplete="cc-number">
+              <span class="icon" id="card-type-icon">💳</span>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Expiry Date</label>
+              <input type="text" id="card-expiry" class="form-control" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp">
+            </div>
+            <div class="form-group">
+              <label class="form-label">CVV / CVC</label>
+              <div class="input-with-icon">
+                <input type="text" id="card-cvv" class="form-control" placeholder="123" maxlength="4" autocomplete="cc-csc">
+                <span class="icon">🔒</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Billing address (simplified) -->
+          <div class="form-group">
+            <label class="form-label">Country</label>
+            <select id="billing-country" class="form-control">
+              <option value="US">🇺🇸 United States</option>
+              <option value="GB">🇬🇧 United Kingdom</option>
+              <option value="EG">🇪🇬 Egypt</option>
+              <option value="DE">🇩🇪 Germany</option>
+              <option value="FR">🇫🇷 France</option>
+              <option value="CA">🇨🇦 Canada</option>
+              <option value="AU">🇦🇺 Australia</option>
+              <option value="AE">🇦🇪 UAE</option>
+              <option value="Other">🌍 Other</option>
+            </select>
+          </div>
+
+          <div style="background:var(--smoke);border-radius:var(--radius-sm);padding:.85rem 1rem;font-size:.83rem;color:var(--gray-600)">
+            🔐 <strong>Test mode:</strong> Use card <code>4242 4242 4242 4242</code>, any future expiry, and any 3-digit CVV.
+          </div>
+
+          <div style="display:flex;align-items:flex-start;gap:.6rem;font-size:.83rem;color:var(--gray-600)">
+            <input type="checkbox" id="agree-terms" style="margin-top:.15rem;flex-shrink:0">
+            <label for="agree-terms">
+              I agree to the <a href="#" style="color:var(--teal);font-weight:600">Terms of Service</a> and authorize TravelAI to charge my card for the selected plan.
+            </label>
+          </div>
+
+          <button id="pay-btn" class="btn btn-gold btn-block btn-xl" style="font-size:1rem">
+            🔒 Complete Payment
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Order Summary -->
+    <div class="order-summary">
+      <div class="order-header">
+        <h3>📋 Order Summary</h3>
+        <p style="color:rgba(255,255,255,.7);font-size:.83rem;margin-top:.25rem" id="plan-name-display">Loading plan…</p>
+      </div>
+      <div class="order-body">
+        <div class="order-line">
+          <span id="plan-display-name">Pro Plan</span>
+          <span id="plan-display-price" class="order-total">$9.99</span>
+        </div>
+        <div class="order-line" id="annual-saving-row" style="display:none">
+          <span style="color:var(--teal-dark);font-size:.85rem">Annual savings</span>
+          <span style="color:var(--teal-dark);font-size:.85rem">-$30.00</span>
+        </div>
+        <div class="order-line"><span style="color:var(--gray-400);font-size:.85rem">Tax</span><span style="color:var(--gray-400);font-size:.85rem">$0.00</span></div>
+        <div class="order-line order-total"><span>Total</span><span id="plan-display-total">$9.99</span></div>
+
+        <ul class="feature-list">
+          <li><span class="check">✓</span> Unlimited chat messages</li>
+          <li><span class="check">✓</span> Unlimited trip plans</li>
+          <li><span class="check">✓</span> Unlimited recommendations</li>
+          <li><span class="check">✓</span> Advanced AI itineraries</li>
+          <li><span class="check">✓</span> Priority AI responses</li>
+          <li><span class="check">✓</span> Priority support</li>
+        </ul>
+
+        <div class="secure-badges">
+          <div class="secure-badge">🔒 SSL Secured</div>
+          <div class="secure-badge">🛡️ 30-day Guarantee</div>
+          <div class="secure-badge">✓ Cancel anytime</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    initNav();
+    if (!Auth.isLoggedIn()) {
+      window.location.href = "login.html?redirect=payment";
+    }
+    if (Auth.isPro()) {
+      window.location.href = "dashboard.html";
+    }
+
+    // Read plan from URL
+    const planId = new URLSearchParams(window.location.search).get("plan") || "pro";
+    const PLAN_DETAILS = {
+      pro:        { name: "Pro Monthly",   price: "$9.99",  total: "$9.99",  label: "Pro Plan · Billed Monthly" },
+      pro_annual: { name: "Pro Annual",    price: "$89.99", total: "$89.99", label: "Pro Plan · Billed Annually" },
+    };
+    const plan = PLAN_DETAILS[planId] || PLAN_DETAILS.pro;
+
+    document.getElementById("plan-name-display").textContent     = plan.label;
+    document.getElementById("plan-display-name").textContent     = plan.name;
+    document.getElementById("plan-display-price").textContent    = plan.price;
+    document.getElementById("plan-display-total").textContent    = plan.total;
+    document.getElementById("pay-btn").textContent = `🔒 Pay ${plan.total}`;
+    if (planId === "pro_annual") {
+      document.getElementById("annual-saving-row").style.display = "flex";
+    }
+
+    // Live card preview updates
+    const cardNumber = document.getElementById("card-number");
+    const cardHolder = document.getElementById("card-holder");
+    const cardExpiry = document.getElementById("card-expiry");
+
+    cardNumber.addEventListener("input", function() {
+      let v = this.value.replace(/\D/g,"").slice(0,16);
+      this.value = v.replace(/(.{4})/g,"$1 ").trim();
+      const display = v.padEnd(16,"•").replace(/(.{4})/g,"$1 ").trim();
+      document.getElementById("card-number-preview").textContent = display;
+      // Card type icon
+      const icon = v[0]==="4" ? "💳" : v[0]==="5" ? "💳" : v[0]==="3" ? "💳" : "💳";
+      document.getElementById("card-type-icon").textContent = icon;
+    });
+
+    cardHolder.addEventListener("input", function() {
+      document.getElementById("card-holder-preview").textContent = this.value.toUpperCase() || "YOUR NAME";
+    });
+
+    cardExpiry.addEventListener("input", function() {
+      let v = this.value.replace(/\D/g,"");
+      if (v.length >= 2) v = v.slice(0,2) + " / " + v.slice(2,4);
+      this.value = v;
+      document.getElementById("card-expiry-preview").textContent = v || "MM/YY";
+    });
+
+    // Payment submit
+    document.getElementById("pay-btn").addEventListener("click", async () => {
+      const agree = document.getElementById("agree-terms").checked;
+      if (!agree) { showError("Please agree to the Terms of Service."); return; }
+
+      const holder = cardHolder.value.trim();
+      const num    = cardNumber.value.replace(/\s/g,"");
+      const expiry = cardExpiry.value.replace(/\s/g,"");
+      const cvv    = document.getElementById("card-cvv").value.trim();
+
+      if (!holder)           { showError("Please enter the cardholder name."); return; }
+      if (num.length < 16)   { showError("Please enter a valid 16-digit card number."); return; }
+      if (expiry.length < 4) { showError("Please enter the expiry date (MM/YY)."); return; }
+      if (cvv.length < 3)    { showError("Please enter the CVV."); return; }
+
+      const btn = document.getElementById("pay-btn");
+      setLoadingBtn(btn, true, "Processing payment…");
+      hideError();
+
+      try {
+        const result = await SubAPI.checkout(planId, num, holder, expiry, cvv);
+        // Update local user
+        const user = Auth.getUser();
+        if (user) { user.is_pro = true; Auth.setUser(user); }
+        // Redirect to confirmation
+        const params = new URLSearchParams({
+          plan:    result.plan_name,
+          amount:  result.amount,
+          tx:      result.transaction_id,
+          last4:   result.card_last4,
+          expires: result.expires_at,
+        });
+        window.location.href = `payment-success.html?${params.toString()}`;
+      } catch(e) {
+        showError(e.message || "Payment failed. Please try again.");
+        setLoadingBtn(btn, false, `🔒 Pay ${plan.total}`);
+      }
+    });
+
+    function showError(msg) {
+      const el = document.getElementById("error-alert");
+      el.textContent = "❌ " + msg;
+      el.style.display = "block";
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function hideError() {
+      document.getElementById("error-alert").style.display = "none";
+    }
+  </script>
+</body>
+</html>

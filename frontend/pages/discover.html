@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TravelAI — Discover Places</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .discover-layout { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .filter-panel {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--gray-200);
+      margin-bottom: 2rem;
+    }
+    .filter-panel h3 { font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--navy); }
+    .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: end; }
+    .interest-grid { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .5rem; }
+    .interest-chip {
+      border: 1.5px solid var(--gray-200);
+      border-radius: 20px;
+      padding: .3rem .8rem;
+      font-size: .8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      color: var(--gray-600);
+      user-select: none;
+    }
+    .interest-chip:hover    { border-color: var(--teal); color: var(--teal); }
+    .interest-chip.selected { border-color: var(--teal); background: var(--teal-pale); color: var(--teal-dark); }
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 1.25rem; }
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--gray-400);
+    }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+    .how-section {
+      background: linear-gradient(135deg, var(--navy), var(--navy-light));
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      color: var(--white);
+    }
+    .how-steps { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .how-step { flex: 1; min-width: 140px; }
+    .how-step .num { font-size: 1.8rem; font-weight: 700; color: var(--gold-light); font-family: var(--font-display); line-height: 1; }
+    .how-step p { font-size: .83rem; color: rgba(255,255,255,.75); margin-top: .3rem; }
+    .dest-card-body { padding: 1rem; }
+    .dest-match-info { 
+      display: flex; 
+      align-items: center; 
+      gap: .5rem; 
+      margin-bottom: .6rem;
+      flex-wrap: wrap;
+    }
+    .skeleton-card { height: 280px; border-radius: var(--radius); }
+    .category-icons { "🏖️":"beach","🏛️":"museum","🏰":"landmark","🌿":"nature","🦁":"wildlife","🏙️":"city","🕌":"religious","🎭":"cultural","🌊":"coastal","🧗":"adventure","🛒":"shopping","🌅":"scenic","🏰":"historical","⛰️":"countryside" }
+    .view-toggle { display: flex; gap: .4rem; }
+    .view-btn {
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      background: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem;
+      transition: all .2s;
+    }
+    .view-btn.active { border-color: var(--teal); background: var(--teal-pale); color: var(--teal-dark); }
+    .results-list-view .dest-card {
+      display: flex;
+      align-items: flex-start;
+    }
+    .results-list-view .dest-card-header { width: 140px; flex-shrink: 0; min-height: 130px; }
+    .results-list-view .dest-card-body { flex: 1; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="../index.html" class="navbar-brand"><div class="logo-icon">✈️</div>Travel<span class="accent">AI</span></a>
+    <ul class="navbar-nav">
+      <li><a href="chat.html">Chat</a></li>
+      <li><a href="planner.html">Planner</a></li>
+      <li><a href="discover.html" class="active">Discover</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div id="nav-user" class="nav-user-info" style="display:none">
+        <span id="nav-username"></span>
+        <span id="nav-pro-badge" class="pro-badge" style="display:none">PRO</span>
+        <button id="nav-logout" class="btn btn-sm btn-outline-white">Logout</button>
+      </div>
+      <div id="nav-login"><a href="login.html" class="btn btn-sm btn-gold">Sign In</a></div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <div class="page-hero">
+    <h1>🧭 Discover <span class="hero-gold">Places</span></h1>
+    <p style="color:rgba(255,255,255,.75);max-width:540px;margin:.75rem auto 0">
+      Our AI recommendation engine uses TF-IDF &amp; Cosine Similarity to match your travel style 
+      with the world's best destinations.
+    </p>
+  </div>
+
+  <div class="discover-layout">
+
+    <!-- How it works -->
+    <div class="how-section">
+      <h3 style="color:var(--white);font-size:1.05rem;font-weight:600">🤖 How the Recommendation Engine Works</h3>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="num">1</div>
+          <strong style="color:var(--gold-light);font-size:.88rem">You pick preferences</strong>
+          <p>Country, budget, trip type, and interests</p>
+        </div>
+        <div class="how-step">
+          <div class="num">2</div>
+          <strong style="color:var(--gold-light);font-size:.88rem">TF-IDF scoring</strong>
+          <p>Your inputs are vectorized against 70+ destination profiles</p>
+        </div>
+        <div class="how-step">
+          <div class="num">3</div>
+          <strong style="color:var(--gold-light);font-size:.88rem">Cosine Similarity</strong>
+          <p>Best matches are ranked by relevance score</p>
+        </div>
+        <div class="how-step">
+          <div class="num">4</div>
+          <strong style="color:var(--gold-light);font-size:.88rem">Top 10 results</strong>
+          <p>Personalized destination cards with match scores</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Panel -->
+    <div class="filter-panel">
+      <h3>🔍 Find Your Perfect Destination</h3>
+      <div class="filter-grid">
+        <div class="form-group">
+          <label class="form-label">Country / Region</label>
+          <select id="filter-country" class="form-control">
+            <option value="">🌍 All Countries</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Budget Level</label>
+          <select id="filter-budget" class="form-control">
+            <option value="low">💚 Budget / Backpacker</option>
+            <option value="medium" selected>💛 Mid-range</option>
+            <option value="high">💎 Luxury</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Trip Type</label>
+          <select id="filter-trip-type" class="form-control">
+            <option value="">Any type</option>
+            <option value="adventure">🧗 Adventure</option>
+            <option value="beach">🏖️ Beach</option>
+            <option value="cultural">🏛️ Cultural</option>
+            <option value="historical">🏰 Historical</option>
+            <option value="relaxing">🧘 Relaxing</option>
+            <option value="nature">🌿 Nature</option>
+            <option value="luxury">💎 Luxury</option>
+            <option value="hiking">🥾 Hiking</option>
+            <option value="wildlife">🦁 Wildlife</option>
+            <option value="romantic">💑 Romantic</option>
+            <option value="city">🌆 City Break</option>
+            <option value="food">🍜 Food &amp; Cuisine</option>
+            <option value="spiritual">🕌 Spiritual</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Results</label>
+          <select id="filter-top-n" class="form-control">
+            <option value="5">Top 5</option>
+            <option value="10" selected>Top 10</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group mt-2">
+        <label class="form-label">Interests (select all that apply)</label>
+        <div class="interest-grid" id="interest-grid">
+          <span class="interest-chip" data-int="history">📜 History</span>
+          <span class="interest-chip" data-int="beaches">🏖️ Beaches</span>
+          <span class="interest-chip" data-int="hiking">🥾 Hiking</span>
+          <span class="interest-chip" data-int="museums">🏛️ Museums</span>
+          <span class="interest-chip" data-int="food">🍜 Food</span>
+          <span class="interest-chip" data-int="photography">📸 Photography</span>
+          <span class="interest-chip" data-int="wildlife">🦁 Wildlife</span>
+          <span class="interest-chip" data-int="diving">🤿 Diving</span>
+          <span class="interest-chip" data-int="culture">🎭 Culture</span>
+          <span class="interest-chip" data-int="architecture">🏗️ Architecture</span>
+          <span class="interest-chip" data-int="nature">🌿 Nature</span>
+          <span class="interest-chip" data-int="shopping">🛍️ Shopping</span>
+          <span class="interest-chip" data-int="nightlife">🎉 Nightlife</span>
+          <span class="interest-chip" data-int="ancient ruins">🏺 Ancient Ruins</span>
+          <span class="interest-chip" data-int="adventure">🧗 Adventure</span>
+          <span class="interest-chip" data-int="art">🎨 Art</span>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-3" style="flex-wrap:wrap">
+        <button id="search-btn" class="btn btn-gold btn-lg" style="min-width:180px">
+          🔍 Find Destinations
+        </button>
+        <button id="reset-btn" class="btn btn-outline btn-lg">
+          ↺ Reset Filters
+        </button>
+      </div>
+
+      <div id="upgrade-bar" class="upgrade-banner mt-3" style="display:none">
+        <div class="icon">⚡</div>
+        <div>
+          <strong>Free plan: 5 recommendation searches</strong>
+          <br><a href="subscription.html">Upgrade to Pro</a> for unlimited access.
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-header">
+      <div>
+        <h2 id="results-title" style="font-size:1.3rem">Top Recommended Destinations</h2>
+        <p id="results-subtitle" class="text-muted" style="font-size:.88rem;margin-top:.2rem">Search above to get personalized recommendations</p>
+      </div>
+      <div class="flex gap-2 items-center">
+        <div class="view-toggle">
+          <button class="view-btn active" id="grid-view-btn" title="Grid view">⊞</button>
+          <button class="view-btn" id="list-view-btn" title="List view">☰</button>
+        </div>
+        <button id="sort-btn" class="btn btn-sm btn-outline" style="display:none">Sort ↕</button>
+      </div>
+    </div>
+
+    <div id="results-grid" class="results-grid">
+      <!-- default: show all destinations -->
+      <div class="empty-state" id="empty-state">
+        <div class="icon">🌍</div>
+        <h3>Ready to Explore?</h3>
+        <p>Set your preferences above and click <strong>Find Destinations</strong><br>to get your personalized top-10 list.</p>
+        <button class="btn btn-primary mt-3" id="load-all-btn">Browse All 70+ Destinations</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    let selectedInterests = [];
+    let isListView = false;
+    let lastResults = [];
+
+    const CATEGORY_ICONS = {
+      beach:'🏖️', museum:'🏛️', landmark:'🗼', nature:'🌿', wildlife:'🦁',
+      city:'🌆', religious:'🕌', cultural:'🎭', coastal:'🌊', adventure:'🧗',
+      shopping:'🛒', scenic:'🌅', historical:'🏰', countryside:'🌾',
+      palace:'🏯', island:'🏝️', wellness:'🧘', park:'🌳'
+    };
+
+    initNav();
+    loadCountries();
+    checkUpgradeBar();
+
+    async function loadCountries() {
+      try {
+        const countries = await RecommendAPI.listCountries();
+        const sel = document.getElementById("filter-country");
+        countries.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c; opt.textContent = c;
+          sel.appendChild(opt);
+        });
+      } catch(e) {}
+    }
+
+    function checkUpgradeBar() {
+      const user = Auth.getUser();
+      if (user && !user.is_pro && (user.usage?.recommend_count || 0) >= 3) {
+        document.getElementById("upgrade-bar").style.display = "flex";
+      }
+    }
+
+    // Interest chips
+    document.querySelectorAll(".interest-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        chip.classList.toggle("selected");
+        const v = chip.dataset.int;
+        selectedInterests = chip.classList.contains("selected")
+          ? [...selectedInterests, v]
+          : selectedInterests.filter(i => i !== v);
+      });
+    });
+
+    // Search
+    document.getElementById("search-btn").addEventListener("click", async () => {
+      if (!Auth.isLoggedIn()) {
+        showToast("Sign in to use recommendations.", "warning");
+        setTimeout(() => window.location.href = "login.html", 1500);
+        return;
+      }
+      const country  = document.getElementById("filter-country").value;
+      const budget   = document.getElementById("filter-budget").value;
+      const tripType = document.getElementById("filter-trip-type").value;
+      const topN     = parseInt(document.getElementById("filter-top-n").value);
+
+      const btn = document.getElementById("search-btn");
+      setLoadingBtn(btn, true, "Finding best matches…");
+      showSkeletons();
+
+      try {
+        const resp = await RecommendAPI.suggest(country || null, budget, tripType || null, selectedInterests, topN);
+        lastResults = resp.results;
+        renderResults(resp);
+        checkUpgradeBar();
+        // Update usage
+        const user = Auth.getUser();
+        if (user) { user.usage = user.usage || {}; user.usage.recommend_count = (user.usage.recommend_count || 0) + 1; Auth.setUser(user); }
+      } catch(e) {
+        if (e.upgradeRequired) {
+          document.getElementById("results-grid").innerHTML = `
+            <div class="upgrade-banner" style="grid-column:1/-1">
+              <div class="icon">⚡</div>
+              <div><strong>Recommendation limit reached</strong><br>
+              <a href="subscription.html">Upgrade to Pro</a> for unlimited destination searches.</div>
+            </div>`;
+        } else {
+          showToast(e.message, "error");
+          document.getElementById("results-grid").innerHTML = `<div class="empty-state"><div class="icon">❌</div><h3>Error</h3><p>${e.message}</p></div>`;
+        }
+      } finally {
+        setLoadingBtn(btn, false, "🔍 Find Destinations");
+      }
+    });
+
+    // Load all
+    document.getElementById("load-all-btn")?.addEventListener("click", async () => {
+      showSkeletons();
+      try {
+        const resp = await RecommendAPI.listDestinations({ limit: 20 });
+        lastResults = resp.results;
+        renderAllDestinations(resp.results);
+        document.getElementById("results-title").textContent = `All Destinations (${resp.total})`;
+        document.getElementById("results-subtitle").textContent = `Showing ${resp.results.length} of ${resp.total}`;
+      } catch(e) { showToast(e.message, "error"); }
+    });
+
+    // Reset
+    document.getElementById("reset-btn").addEventListener("click", () => {
+      document.getElementById("filter-country").value = "";
+      document.getElementById("filter-budget").value = "medium";
+      document.getElementById("filter-trip-type").value = "";
+      document.getElementById("filter-top-n").value = "10";
+      document.querySelectorAll(".interest-chip").forEach(c => c.classList.remove("selected"));
+      selectedInterests = [];
+      document.getElementById("results-grid").innerHTML = `
+        <div class="empty-state" id="empty-state">
+          <div class="icon">🌍</div>
+          <h3>Filters reset</h3>
+          <p>Set new preferences and search again.</p>
+        </div>`;
+      document.getElementById("results-title").textContent = "Top Recommended Destinations";
+      document.getElementById("results-subtitle").textContent = "";
+    });
+
+    // View toggle
+    document.getElementById("grid-view-btn").addEventListener("click", () => {
+      isListView = false;
+      document.getElementById("grid-view-btn").classList.add("active");
+      document.getElementById("list-view-btn").classList.remove("active");
+      document.getElementById("results-grid").classList.remove("results-list-view");
+    });
+    document.getElementById("list-view-btn").addEventListener("click", () => {
+      isListView = true;
+      document.getElementById("list-view-btn").classList.add("active");
+      document.getElementById("grid-view-btn").classList.remove("active");
+      document.getElementById("results-grid").classList.add("results-list-view");
+    });
+
+    function showSkeletons() {
+      const grid = document.getElementById("results-grid");
+      grid.innerHTML = Array(6).fill(0).map(() =>
+        `<div class="skeleton skeleton-card"></div>`).join("");
+    }
+
+    function renderResults(resp) {
+      const { query, count, results } = resp;
+      const grid = document.getElementById("results-grid");
+
+      // Update header
+      const parts = [];
+      if (query.country)   parts.push(query.country);
+      if (query.trip_type) parts.push(query.trip_type);
+      parts.push(budgetLabel(query.budget));
+      document.getElementById("results-title").textContent = `Top ${count} Matches — ${parts.join(" · ")}`;
+      document.getElementById("results-subtitle").textContent =
+        query.interests?.length
+          ? `Filtered by: ${query.interests.join(", ")}`
+          : "Ranked by AI match score";
+      document.getElementById("sort-btn").style.display = "inline-flex";
+
+      if (!results.length) {
+        grid.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><h3>No Results</h3><p>Try adjusting your filters.</p></div>`;
+        return;
+      }
+      grid.innerHTML = results.map((d, i) => destCard(d, i + 1, true)).join("");
+      // Animate score bars
+      setTimeout(() => document.querySelectorAll(".match-fill").forEach(el => el.style.width = el.dataset.w), 100);
+    }
+
+    function renderAllDestinations(dests) {
+      document.getElementById("results-grid").innerHTML =
+        dests.map((d, i) => destCard(d, i + 1, false)).join("");
+    }
+
+    function destCard(d, rank, showScore) {
+      const icon = CATEGORY_ICONS[d.category] || "🌍";
+      const budgIcon = { low:"💚", medium:"💛", high:"💎" }[d.budget] || "💰";
+      const scoreW = Math.min(Math.max(d.match_score || 0, 5), 100);
+
+      return `
+        <div class="dest-card fade-in" style="animation-delay:${(rank-1)*0.05}s">
+          <div class="dest-card-header">
+            <div class="dest-card-rank">${rank}</div>
+            <div class="dest-card-category">${d.category}</div>
+            <div class="dest-card-icon">${icon}</div>
+            <div class="dest-card-name">${d.name}</div>
+            <div class="dest-card-location">📍 ${d.city}, ${d.country}</div>
+          </div>
+          <div class="dest-card-body">
+            ${showScore ? `
+              <div class="match-score">
+                <span>Match</span>
+                <div class="match-bar"><div class="match-fill" data-w="${scoreW}%" style="width:0"></div></div>
+                <span>${d.match_score}%</span>
+              </div>` : ""}
+            <p class="dest-card-desc">${d.description?.substring(0, 100)}…</p>
+            <div class="dest-card-tags">
+              <span class="tag tag-gold">${budgIcon} ${d.budget}</span>
+              ${(d.interests || []).slice(0, 3).map(i => `<span class="tag tag-teal">${i}</span>`).join("")}
+              ${d.trip_type_match ? `<span class="tag" style="background:#d1fae5;color:#065f46">✓ Match</span>` : ""}
+            </div>
+            <div class="flex gap-1 mt-2">
+              <button class="btn btn-sm btn-primary" style="flex:1" 
+                onclick="planFromDest('${d.name}', '${d.country}')">
+                📅 Plan Trip
+              </button>
+              <button class="btn btn-sm btn-outline"
+                onclick="chatAboutDest('${d.name}', '${d.country}')">
+                💬 Ask AI
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function planFromDest(name, country) {
+      window.location.href = `planner.html?dest=${encodeURIComponent(name + ", " + country)}`;
+    }
+
+    function chatAboutDest(name, country) {
+      const q = encodeURIComponent(`Tell me about visiting ${name} in ${country}. What are the highlights, best time to go, and tips?`);
+      window.location.href = `chat.html?q=${q}`;
+    }
+
+    window.planFromDest  = planFromDest;
+    window.chatAboutDest = chatAboutDest;
+
+    // Pre-fill destination from URL (from planner page)
+    const urlParams = new URLSearchParams(window.location.search);
+    const destParam = urlParams.get("country");
+    if (destParam) {
+      const sel = document.getElementById("filter-country");
+      const trySet = setInterval(() => {
+        const opt = Array.from(sel.options).find(o => o.value.toLowerCase() === destParam.toLowerCase());
+        if (opt) { sel.value = opt.value; clearInterval(trySet); document.getElementById("search-btn").click(); }
+      }, 300);
+      setTimeout(() => clearInterval(trySet), 3000);
+    }
+  </script>
+</body>
+</html>
